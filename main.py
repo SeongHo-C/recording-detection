@@ -1,15 +1,22 @@
+import numpy as np
 import sys
+import cv2
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTabWidget, QPushButton
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtGui import QImage, QPixmap
+from video_thread import VideoThread
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()  # call the constructor of the parent class
         self.setWindowTitle('Hornet detection recording')
+        self.setup_ui()
+        self.setup_video_thread()
+
+    def setup_ui(self):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-
         self.main_layout = QHBoxLayout(self.central_widget)
 
         self.left_widget = QWidget()
@@ -51,6 +58,27 @@ class MainWindow(QMainWindow):
 
         self.main_layout.addWidget(self.left_widget)
         self.main_layout.addWidget(self.right_widget)
+
+    def setup_video_thread(self):
+        self.thread = VideoThread()
+        self.thread.change_pixmap_signal.connect(self.update_frame)
+        self.thread.start()
+
+    @pyqtSlot(np.ndarray)
+    def update_frame(self, cv_frame):
+        qt_frame = self.convert_cv_qt(cv_frame)
+        self.video_label.setPixmap(qt_frame)
+
+    def convert_cv_qt(self, cv_frame):
+        rgb_frame = cv2.cvtColor(cv_frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_frame.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        return QPixmap.fromImage(convert_to_Qt_format)
+
+    def closeEvent(self, event):
+        self.thread.stop()
+        event.accept()
 
 
 if __name__ == '__main__':
