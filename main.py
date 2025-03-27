@@ -17,7 +17,8 @@ class MainWindow(QMainWindow):
 
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignCenter)
-        self.video_label.setFixedSize(1280, 720)
+        self.video_label.setFixedSize(640, 480)
+        self.video_label.setStyleSheet('border: 4px groove gray; border-radius: 5px')
         self.left_layout.addWidget(self.video_label)
 
         self.right_widget = QWidget()
