@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import cv2
+import json
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTabWidget, QPushButton
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap
@@ -11,8 +12,17 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()  # call the constructor of the parent class
         self.setWindowTitle('Hornet detection recording')
+        self.camera_data = self.load_camera_data()
         self.setup_ui()
         self.setup_video_thread()
+        self.setup_connections()
+
+    def load_camera_data(self):
+        try:
+            with open('camera_data.json', 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except Exception as e:
+            print(f'Error loading camera data: {e}')
 
     def setup_ui(self):
         self.central_widget = QWidget()
@@ -33,10 +43,21 @@ class MainWindow(QMainWindow):
 
         self.top_layout = QHBoxLayout()
         self.camera_model_combo = QComboBox()
+        for camera_model in self.camera_data.keys():
+            self.camera_model_combo.addItem(camera_model)
+
         self.resolution_combo = QComboBox()
-        self.top_layout.addWidget(QLabel('camera model:'))
+        selected_camera_model = self.camera_model_combo.currentText()
+        self.resolutions = self.camera_data[selected_camera_model]['resolution']
+        for idx, resolution in enumerate(self.resolutions):
+            name = resolution['name']
+            self.resolution_combo.addItem(name)
+            if name == '640 x 480':
+                self.resolution_combo.setCurrentIndex(idx)
+
+        self.top_layout.addWidget(QLabel('Camera model:'))
         self.top_layout.addWidget(self.camera_model_combo)
-        self.top_layout.addWidget(QLabel('resolution:'))
+        self.top_layout.addWidget(QLabel('Resolution:'))
         self.top_layout.addWidget(self.resolution_combo)
         self.right_layout.addLayout(self.top_layout)
 
@@ -63,6 +84,23 @@ class MainWindow(QMainWindow):
         self.thread = VideoThread()
         self.thread.change_pixmap_signal.connect(self.update_frame)
         self.thread.start()
+
+    def setup_connections(self):
+        self.camera_model_combo.currentTextChanged.connect(self.on_camera_model_changed)
+        # self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
+
+        # self.start_button.clicked.connect(self.start_recordeing)
+        # self.stop_button.clicked.connect(self.stop_recordeing)
+
+    def on_camera_model_changed(self, camera_model):
+        self.resolution_combo.clear()
+
+        if camera_model in self.camera_data:
+            self.resolutions = self.camera_data[camera_model]['resolution']
+            for resolution in self.resolutions:
+                self.resolution_combo.addItem(resolution['name'])
+
+        # self.update_control_tabs(camera_model)
 
     @pyqtSlot(np.ndarray)
     def update_frame(self, cv_frame):
