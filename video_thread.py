@@ -72,3 +72,9 @@ class VideoThread(QThread):
             self.start()
         else:
             print('Failed to change resolution')
+
+    def start_recording(self):
+        self.recording = True
+
+    def stop_recording(self):
+        self.recording = False

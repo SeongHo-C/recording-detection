@@ -94,8 +94,8 @@ class MainWindow(QMainWindow):
         self.camera_model_combo.currentTextChanged.connect(self.on_camera_model_changed)
         self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
 
-        # self.start_button.clicked.connect(self.start_recordeing)
-        # self.stop_button.clicked.connect(self.stop_recordeing)
+        self.start_button.clicked.connect(self.thread.start_recordeing)
+        self.stop_button.clicked.connect(self.thread.stop_recordeing)
 
     def on_camera_model_changed(self, camera_model):
         self.resolution_combo.clear()
