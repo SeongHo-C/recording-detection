@@ -8,34 +8,60 @@ class VideoThread(QThread):
 
     def __init__(self):
         super().__init__()
+        self.cap = None
+        self.is_running = False
+        self.recording = False
         self.initialize_camera()
 
-        self.running = False
-        self.recording = False
+    def initialize_camera(self, width=640, height=480):
+        if self.cap is not None:
+            self.cap.release()
 
-    def initialize_camera(self):
-        self.cap = cv2.VideoCapture(0)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-        self.cap.set(cv2.CAP_PROP_FPS, 90)
+        try:
+            self.cap = cv2.VideoCapture(0)
 
-        print(f'Actual FPS: {self.cap.get(cv2.CAP_PROP_FPS)}')
+            if not self.cap.isOpened():
+                print('Camera is not open')
+                return False
+
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+            self.cap.set(cv2.CAP_PROP_FPS, 90)
+
+            print(
+                f'Actual Resolution: {int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))} x {int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}')
+            print(f'Actual FPS: {self.cap.get(cv2.CAP_PROP_FPS)}')
+            return True
+        except Exception as e:
+            print(f'An error occurred while loading: {e}')
+            return False
 
     def run(self):
-        self.running = True
+        self.is_running = True
 
-        while self.running:
+        while self.is_running:
+            if self.cap is None or not self.cap.isOpened():
+                print('Camera is not connected')
+                break
+
             ret, frame = self.cap.read()
-            if ret:
-                self.change_pixmap_signal.emit(frame)
+
+            if not ret:
+                print('Could not read frame')
+                break
+
+            self.change_pixmap_signal.emit(frame)
 
     def start(self):
-        self.running = True
+        self.is_running = True
         super().start()
 
     def stop(self):
-        self.running = False
-        if hasattr(self, 'cap') and self.cap.isOpened():
+        self.is_running = False
+
+        if self.cap is not None:
             self.cap.release()
+            self.cap = None
+
         self.wait()  # wait until thread terminates

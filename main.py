@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
                 return json.load(file)
         except Exception as e:
             print(f'Error loading camera data: {e}')
+            return {}
 
     def setup_ui(self):
         self.central_widget = QWidget()
@@ -87,7 +88,7 @@ class MainWindow(QMainWindow):
 
     def setup_connections(self):
         self.camera_model_combo.currentTextChanged.connect(self.on_camera_model_changed)
-        # self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
+        self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
 
         # self.start_button.clicked.connect(self.start_recordeing)
         # self.stop_button.clicked.connect(self.stop_recordeing)
@@ -101,6 +102,23 @@ class MainWindow(QMainWindow):
                 self.resolution_combo.addItem(resolution['name'])
 
         # self.update_control_tabs(camera_model)
+
+    def on_resolution_changed(self, resolution_name):
+        selected_resolution = next(
+            (res for res in self.resolutions if res['name'] == resolution_name),
+            None
+        )
+
+        if selected_resolution:
+            width = selected_resolution['width']
+            height = selected_resolution['height']
+
+            self.thread.stop()
+
+            self.thread.initialize_camera(width, height)
+            self.video_label.setFixedSize(width, height)
+
+            self.thread.start()
 
     @pyqtSlot(np.ndarray)
     def update_frame(self, cv_frame):
