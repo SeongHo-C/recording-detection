@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import cv2
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTabWidget, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTabWidget, QPushButton, QFormLayout, QSlider, QCheckBox
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap
 from video_thread import VideoThread
@@ -66,10 +66,14 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.tabs)
 
         self.user_tab = QWidget()
+        self.user_tab_layout = QFormLayout(self.user_tab)
         self.tabs.addTab(self.user_tab, 'User Controls')
 
         self.camera_tab = QWidget()
+        self.camera_tab_layout = QFormLayout(self.camera_tab)
         self.tabs.addTab(self.camera_tab, 'Camera Controls')
+
+        self.update_control_tabs(selected_camera_model)
 
         self.button_layout = QHBoxLayout()
         self.start_button = QPushButton('Recording Start')
@@ -101,7 +105,66 @@ class MainWindow(QMainWindow):
             for resolution in self.resolutions:
                 self.resolution_combo.addItem(resolution['name'])
 
-        # self.update_control_tabs(camera_model)
+            self.update_control_tabs(camera_model)
+
+    def update_control_tabs(self, camera_model):
+        self.clear_layout(self.user_tab_layout)
+        self.clear_layout(self.camera_tab_layout)
+
+        if camera_model in self.camera_data:
+            properties = self.camera_data[camera_model]['properties']
+
+            if 'User Controls' in properties:
+                for control in properties['User Controls']:
+                    self.add_control_widget(self.user_tab_layout, control)
+
+            if 'Camera Controls' in properties:
+                for control in properties['Camera Controls']:
+                    self.add_control_widget(self.camera_tab_layout, control)
+
+    def clear_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def add_control_widget(self, layout, control):
+        name = control['name']
+        control_type = control.get('type', '')
+
+        if control_type == 'int':
+            slider = QSlider(Qt.Horizontal)
+            slider.setMinimum(control['min'])
+            slider.setMaximum(control['max'])
+            slider.setValue(control['value'])
+            slider.setTickInterval(control['step'])
+
+            value_label = QLabel(str(control['value']))
+            slider.valueChanged.connect(lambda v, label=value_label: label.setText(str(v)))
+
+            slider_layout = QHBoxLayout()
+            slider_layout.addWidget(slider)
+            slider_layout.addWidget(value_label)
+
+            layout.addRow(name, slider_layout)
+        elif control_type == 'bool':
+            checkbox = QCheckBox()
+            checkbox.setChecked(control['value'] == 1)
+
+            layout.addRow(name, checkbox)
+        elif control_type == 'menu':
+            combo = QComboBox()
+            if 'menu' in control:
+                for key, value in control['menu'].items():
+                    combo.addItem(value, key)
+
+                for i in range(combo.count()):
+                    if combo.itemData(i) == str(control['value']):
+                        combo.setCurrentIndex(i)
+                        break
+
+            layout.addRow(name, combo)
 
     def on_resolution_changed(self, resolution_name):
         selected_resolution = next(
