@@ -113,12 +113,9 @@ class MainWindow(QMainWindow):
             width = selected_resolution['width']
             height = selected_resolution['height']
 
-            self.thread.stop()
-
             self.thread.initialize_camera(width, height)
+            self.thread.change_resolution(width, height)
             self.video_label.setFixedSize(width, height)
-
-            self.thread.start()
 
     @pyqtSlot(np.ndarray)
     def update_frame(self, cv_frame):
