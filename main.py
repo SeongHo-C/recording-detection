@@ -94,8 +94,8 @@ class MainWindow(QMainWindow):
         self.camera_model_combo.currentTextChanged.connect(self.on_camera_model_changed)
         self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
 
-        self.start_button.clicked.connect(self.thread.start_recordeing)
-        self.stop_button.clicked.connect(self.thread.stop_recordeing)
+        self.start_button.clicked.connect(self.thread.start_recording)
+        self.stop_button.clicked.connect(self.thread.stop_recording)
 
     def on_camera_model_changed(self, camera_model):
         self.resolution_combo.clear()
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
             slider.setTickInterval(control['step'])
 
             value_label = QLabel(str(control['value']))
-            slider.valueChanged.connect(lambda v, label=value_label: label.setText(str(v)))
+            slider.valueChanged.connect(lambda v, label=value_label: self.update_camera_setting(v, label))
 
             slider_layout = QHBoxLayout()
             slider_layout.addWidget(slider)
@@ -165,6 +165,9 @@ class MainWindow(QMainWindow):
                         break
 
             layout.addRow(name, combo)
+
+    def update_camera_setting(self, v, label):
+        label.setText(str(v))
 
     def on_resolution_changed(self, resolution_name):
         selected_resolution = next(

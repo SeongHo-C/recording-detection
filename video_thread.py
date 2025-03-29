@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
+import torch
+import time
 from PyQt5.QtCore import QThread, pyqtSignal
+from ultralytics import YOLO
 
 
 class VideoThread(QThread):
@@ -9,9 +12,14 @@ class VideoThread(QThread):
     def __init__(self):
         super().__init__()
         self.running = False
+        self.can_recording = False
         self.recording = False
 
         self.initialize_camera()
+
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = YOLO('weights/detect_s.pt')
+        self.model.to(self.device)
 
     def initialize_camera(self, width=640, height=480):
         try:
@@ -48,7 +56,56 @@ class VideoThread(QThread):
                 print('Not read frame')
                 break
 
-            self.change_pixmap_signal.emit(frame)
+            results = self.model(source=frame)
+
+            hornet_detected = False
+            for result in results:
+                for cls in result.boxes.cls.cpu().numpy():
+                    if int(cls) in {0, 1}:
+                        hornet_detected = True
+                        break
+                if hornet_detected:
+                    break
+
+            if self.can_recording:
+                if hornet_detected and not self.recording:
+                    self.initialize_recording(frame)
+
+            annotated_frame = results[0].plot()
+            self.change_pixmap_signal.emit(annotated_frame)
+
+            if self.recording:
+                self.record_frame(frame)
+
+    def start_recording(self):
+        self.can_recording = True
+
+    def initialize_recording(self, first_frame):
+        self.recording = True
+        self.recording_start_time = time.time()
+        timestamp = time.strftime('%Y%m%d-%H%M%S')
+        self.output_file = f'recordings/hornet_{timestamp}.mp4'
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.out = cv2.VideoWriter(
+            self.output_file,
+            fourcc,
+            90.0,
+            (first_frame.shape[1], first_frame.shape[0])
+        )
+        print(f'Started recording: {self.output_file}')
+
+    def record_frame(self, frame):
+        self.out.write(frame)
+        if time.time() - self.recording_start_time > 30:
+            self.stop_recording()
+
+    def stop_recording(self):
+        self.can_recording = False
+        self.recording = False
+        if hasattr(self, 'out'):
+            self.out.release()
+        print(f'Stopped recording: {self.output_file}')
+        time.sleep(5)
 
     def start(self):
         self.running = True
@@ -72,9 +129,3 @@ class VideoThread(QThread):
             self.start()
         else:
             print('Failed to change resolution')
-
-    def start_recording(self):
-        self.recording = True
-
-    def stop_recording(self):
-        self.recording = False
