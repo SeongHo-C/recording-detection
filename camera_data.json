@@ -151,19 +151,6 @@
                     "type": "bool",
                     "default": 1,
                     "value": 1
-                },
-                {
-                    "name": "power_line_frequency",
-                    "type": "menu",
-                    "min": 0,
-                    "max": 2,
-                    "default": 1,
-                    "value": 1,
-                    "menu": {
-                        "0": "Disabled", 
-                        "1": "50Hz", 
-                        "2": "60Hz"
-                    }
                 }
             ],
             "Camera Controls": [

@@ -21,6 +21,26 @@ class VideoThread(QThread):
         self.model = YOLO('weights/detect_s.pt')
         self.model.to(self.device)
 
+        self.cv2_prop_enum = {
+            "brightness": 10,
+            "contrast": 11,
+            "saturation": 12,
+            "hue": 13,
+            "gamma": 22,
+            "gain": 14,
+            "white_balance_temperature": 45,
+            "sharpness": 20,
+            "backlight_compensation": 32,
+            "white_balance_automatic": 44,
+            "exposure_time_absolute": 15,
+            "pan_absolute": 33,
+            "tilt_absolute": 34,
+            "focus_absolute": 28,
+            "zoom_absolute": 27,
+            "focus_automatic_continuous": 39,
+            "auto_exposure": 21
+        }
+
     def initialize_camera(self, width=640, height=480):
         try:
             self.cap = cv2.VideoCapture(0)
@@ -56,7 +76,7 @@ class VideoThread(QThread):
                 print('Not read frame')
                 break
 
-            results = self.model(source=frame)
+            results = self.model(source=frame, verbose=False)
 
             hornet_detected = False
             for result in results:
@@ -129,3 +149,11 @@ class VideoThread(QThread):
             self.start()
         else:
             print('Failed to change resolution')
+
+    def update_camera_setting(self, name, value):
+        prop = self.cv2_prop_enum[name]
+
+        if self.cap is not None and self.cap.isOpened():
+            self.cap.set(prop, value)
+            # actual_value = self.cap.get(prop)
+            # print(f'Camera setting update completed: {name}, {actual_value}')

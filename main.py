@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
             slider.setTickInterval(control['step'])
 
             value_label = QLabel(str(control['value']))
-            slider.valueChanged.connect(lambda v, label=value_label: self.update_camera_setting(v, label))
+            slider.valueChanged.connect(lambda v, label=value_label: self.update_camera_setting(name, v, label))
 
             slider_layout = QHBoxLayout()
             slider_layout.addWidget(slider)
@@ -166,8 +166,10 @@ class MainWindow(QMainWindow):
 
             layout.addRow(name, combo)
 
-    def update_camera_setting(self, v, label):
+    def update_camera_setting(self, name, v, label):
         label.setText(str(v))
+
+        self.thread.update_camera_setting(name, v)
 
     def on_resolution_changed(self, resolution_name):
         selected_resolution = next(
