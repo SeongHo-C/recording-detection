@@ -48,8 +48,8 @@ class MainWindow(QMainWindow):
             self.camera_model_combo.addItem(camera_model)
 
         self.resolution_combo = QComboBox()
-        selected_camera_model = self.camera_model_combo.currentText()
-        self.resolutions = self.camera_data[selected_camera_model]['resolution']
+        self.camera_model = self.camera_model_combo.currentText()
+        self.resolutions = self.camera_data[self.camera_model]['resolution']
         for idx, resolution in enumerate(self.resolutions):
             name = resolution['name']
             self.resolution_combo.addItem(name)
@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         self.camera_tab_layout = QFormLayout(self.camera_tab)
         self.tabs.addTab(self.camera_tab, 'Camera Controls')
 
-        self.update_control_tabs(selected_camera_model)
+        self.update_control_tabs()
 
         self.button_layout = QHBoxLayout()
         self.start_button = QPushButton('Recording Start')
@@ -99,20 +99,21 @@ class MainWindow(QMainWindow):
 
     def on_camera_model_changed(self, camera_model):
         self.resolution_combo.clear()
+        self.camera_model = camera_model
 
         if camera_model in self.camera_data:
-            self.resolutions = self.camera_data[camera_model]['resolution']
+            self.resolutions = self.camera_data[self.camera_model]['resolution']
             for resolution in self.resolutions:
                 self.resolution_combo.addItem(resolution['name'])
 
-            self.update_control_tabs(camera_model)
+            self.update_control_tabs()
 
-    def update_control_tabs(self, camera_model):
+    def update_control_tabs(self):
         self.clear_layout(self.user_tab_layout)
         self.clear_layout(self.camera_tab_layout)
 
-        if camera_model in self.camera_data:
-            properties = self.camera_data[camera_model]['properties']
+        if self.camera_model in self.camera_data:
+            properties = self.camera_data[self.camera_model]['properties']
 
             if 'User Controls' in properties:
                 for control in properties['User Controls']:
@@ -166,10 +167,18 @@ class MainWindow(QMainWindow):
 
             layout.addRow(name, combo)
 
-    def update_camera_setting(self, name, v, label):
-        label.setText(str(v))
+    def update_camera_setting(self, name, value, label):
+        label.setText(str(value))
 
-        self.thread.update_camera_setting(name, v)
+        result = self.thread.update_camera_setting(name, value)
+        if result:
+            properties = self.camera_data[self.camera_model]['properties']
+            print(properties.values())
+            for control_group in properties.values():
+                for control in control_group:
+                    if control['name'] == name:
+                        control['value'] = value
+                        break
 
     def on_resolution_changed(self, resolution_name):
         selected_resolution = next(
@@ -185,6 +194,14 @@ class MainWindow(QMainWindow):
             self.thread.change_resolution(width, height)
             self.video_label.setFixedSize(width, height)
 
+    def save_camera_data(self):
+        try:
+            with open('camera_data.json', 'w', encoding='utf-8') as file:
+                json.dump(self.camera_data, file, indent=4)
+                print('Camera data saved to JSON file')
+        except Exception as e:
+            print(f'Error saving camera data: {e}')
+
     @pyqtSlot(np.ndarray)
     def update_frame(self, cv_frame):
         qt_frame = self.convert_cv_qt(cv_frame)
@@ -198,6 +215,7 @@ class MainWindow(QMainWindow):
         return QPixmap.fromImage(convert_to_Qt_format)
 
     def closeEvent(self, event):
+        self.save_camera_data()
         self.thread.stop()
         event.accept()
 

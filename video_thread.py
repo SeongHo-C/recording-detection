@@ -153,7 +153,12 @@ class VideoThread(QThread):
     def update_camera_setting(self, name, value):
         prop = self.cv2_prop_enum[name]
 
-        if self.cap is not None and self.cap.isOpened():
-            self.cap.set(prop, value)
-            # actual_value = self.cap.get(prop)
-            # print(f'Camera setting update completed: {name}, {actual_value}')
+        try:
+            if self.cap is not None and self.cap.isOpened():
+                self.cap.set(prop, value)
+                # actual_value = self.cap.get(prop)
+                # print(f'Camera setting update completed: {name}, {actual_value}')
+            return True
+        except Exception as e:
+            print('Error updating camera setting: {e}')
+            return False
