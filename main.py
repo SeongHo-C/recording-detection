@@ -142,7 +142,8 @@ class MainWindow(QMainWindow):
             slider.setTickInterval(control['step'])
 
             value_label = QLabel(str(control['value']))
-            slider.valueChanged.connect(lambda v, label=value_label: self.update_camera_setting(name, v, label))
+            slider.valueChanged.connect(
+                lambda v, label=value_label: self.update_camera_setting(control_type, name, v, label))
 
             slider_layout = QHBoxLayout()
             slider_layout.addWidget(slider)
@@ -152,6 +153,8 @@ class MainWindow(QMainWindow):
         elif control_type == 'bool':
             checkbox = QCheckBox()
             checkbox.setChecked(control['value'] == 1)
+
+            checkbox.stateChanged.connect(lambda state: self.update_camera_setting(control_type, name, state))
 
             layout.addRow(name, checkbox)
         elif control_type == 'menu':
@@ -165,15 +168,20 @@ class MainWindow(QMainWindow):
                         combo.setCurrentIndex(i)
                         break
 
+                combo.currentIndexChanged.connect(
+                    lambda index: self.update_camera_setting(control_type, name, int(combo.itemData(index))))
+
             layout.addRow(name, combo)
 
-    def update_camera_setting(self, name, value, label):
-        label.setText(str(value))
+    def update_camera_setting(self, type, name, value, label=None):
+        if type == 'int':
+            label.setText(str(value))
+        elif type == 'bool':
+            value = 1 if value == 2 else 0
 
         result = self.thread.update_camera_setting(name, value)
         if result:
             properties = self.camera_data[self.camera_model]['properties']
-            print(properties.values())
             for control_group in properties.values():
                 for control in control_group:
                     if control['name'] == name:
