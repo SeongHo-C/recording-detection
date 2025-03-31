@@ -75,6 +75,9 @@ class MainWindow(QMainWindow):
 
         self.update_control_tabs()
 
+        self.default_setting_button = QPushButton('Default Setting')
+        self.right_layout.addWidget(self.default_setting_button)
+
         self.button_layout = QHBoxLayout()
         self.start_button = QPushButton('Recording Start')
         self.stop_button = QPushButton('Recording Stop')
@@ -94,6 +97,7 @@ class MainWindow(QMainWindow):
         self.camera_model_combo.currentTextChanged.connect(self.on_camera_model_changed)
         self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
 
+        self.default_setting_button.clicked.connect(self.apply_default_settings)
         self.start_button.clicked.connect(self.thread.start_recording)
         self.stop_button.clicked.connect(self.thread.stop_recording)
 
@@ -129,6 +133,9 @@ class MainWindow(QMainWindow):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
+            else:
+                if item.layout() is not None:
+                    self.clear_layout(item.layout())
 
     def add_control_widget(self, layout, control):
         name = control['name']
@@ -187,6 +194,19 @@ class MainWindow(QMainWindow):
                     if control['name'] == name:
                         control['value'] = value
                         break
+
+    def apply_default_settings(self):
+        if self.camera_model in self.camera_data:
+            properties = self.camera_data[self.camera_model]['properties']
+
+            for group_name, controls in properties.items():
+                for control in controls:
+                    default_value = control.get('default', control['value'])
+                    control['value'] = default_value
+
+                    self.thread.update_camera_setting(control['name'], default_value)
+
+            self.update_control_tabs()
 
     def on_resolution_changed(self, resolution_name):
         selected_resolution = next(
