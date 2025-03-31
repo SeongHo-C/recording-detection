@@ -98,17 +98,15 @@ class VideoThread(QThread):
                 self.record_frame(frame)
 
     def start_recording(self):
-        if not self.can_recording:
-            self.can_recording = True
+        self.can_recording = True
 
     def stop_recording(self):
-        if self.can_recording:
-            self.can_recording = False
-            self.recording = False
-            if hasattr(self, 'out'):
-                self.out.release()
-            print(f'Stopped recording: {self.output_file}')
-            time.sleep(5)
+        self.can_recording = False
+        self.recording = False
+        if hasattr(self, 'out'):
+            self.out.release()
+        print(f'Stopped recording: {self.output_file}')
+        time.sleep(5)
 
     def initialize_recording(self, first_frame):
         self.recording = True
@@ -153,7 +151,7 @@ class VideoThread(QThread):
             print('Failed to change resolution')
 
     def update_camera_setting(self, name, value):
-        prop = self.cv2_prop_enum[name]3
+        prop = self.cv2_prop_enum[name]
 
         try:
             if self.cap is not None and self.cap.isOpened():
