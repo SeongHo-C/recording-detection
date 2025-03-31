@@ -1,10 +1,10 @@
 {
-    "Global Shutter Camera: Global S": {
+    "ELP-USBGS1200P01-V100": {
         "resolution": [
             {
-                "name": "1920 x 1080",
+                "name": "1920 x 1200",
                 "width": 1920,
-                "height": 1080,
+                "height": 1200,
                 "fps": [
                     90,
                     60,
@@ -17,9 +17,9 @@
                 ]
             },
             {
-                "name": "1920 x 1200",
+                "name": "1920 x 1080",
                 "width": 1920,
-                "height": 1200,
+                "height": 1080,
                 "fps": [
                     90,
                     60,
@@ -296,6 +296,190 @@
                     "type": "bool",
                     "default": 1,
                     "value": 1
+                },
+                {
+                    "name": "auto_exposure",
+                    "type": "menu",
+                    "min": 0,
+                    "max": 3,
+                    "default": 3,
+                    "value": 3,
+                    "menu": {
+                        "1": "Manual Mode",
+                        "3": "Aperture Priority Mode"
+                    }
+                }
+            ]
+        }
+    },
+    "ELP-USBGS800P03-MF12": {
+        "resolution": [
+            {
+                "name": "1280 x 800",
+                "width": 1280,
+                "height": 800,
+                "fps": [
+                    120
+                ]
+            },
+            {
+                "name": "1280 x 720",
+                "width": 1280,
+                "height": 720,
+                "fps": [
+                    120
+                ]
+            },
+            {
+                "name": "1024 x 768",
+                "width": 1024,
+                "height": 768,
+                "fps": [
+                    120
+                ]
+            },
+            {
+                "name": "800 x 600",
+                "width": 800,
+                "height": 600,
+                "fps": [
+                    120
+                ]
+            },
+            {
+                "name": "640 x 480",
+                "width": 640,
+                "height": 480,
+                "fps": [
+                    210
+                ]
+            },
+            {
+                "name": "640 x 400",
+                "width": 640,
+                "height": 400,
+                "fps": [
+                    210
+                ]
+            },
+            {
+                "name": "320 x 240",
+                "width": 320,
+                "height": 240,
+                "fps": [
+                    420
+                ]
+            },
+            {
+                "name": "160 x 120",
+                "width": 160,
+                "height": 120,
+                "fps": [
+                    640
+                ]
+            }
+        ],
+        "properties": {
+            "User Controls": [
+                {
+                    "name": "brightness",
+                    "type": "int",
+                    "min": -64,
+                    "max": 64,
+                    "step": 1,
+                    "default": 0,
+                    "value": 0
+                },
+                {
+                    "name": "contrast",
+                    "type": "int",
+                    "min": 0,
+                    "max": 95,
+                    "step": 1,
+                    "default": 1,
+                    "value": 1
+                },
+                {
+                    "name": "saturation",
+                    "type": "int",
+                    "min": 0,
+                    "max": 100,
+                    "step": 1,
+                    "default": 0,
+                    "value": 0
+                },
+                {
+                    "name": "hue",
+                    "type": "int",
+                    "min": -2000,
+                    "max": 2000,
+                    "step": 1,
+                    "default": 0,
+                    "value": 0
+                },
+                {
+                    "name": "gamma",
+                    "type": "int",
+                    "min": 100,
+                    "max": 300,
+                    "step": 1,
+                    "default": 100,
+                    "value": 100
+                },
+                {
+                    "name": "gain",
+                    "type": "int",
+                    "min": 16,
+                    "max": 255,
+                    "step": 1,
+                    "default": 100,
+                    "value": 100
+                },
+                {
+                    "name": "white_balance_temperature",
+                    "type": "int",
+                    "min": 2800,
+                    "max": 6500,
+                    "step": 1,
+                    "default": 4600,
+                    "value": 4600,
+                    "flags": "active"
+                },
+                {
+                    "name": "sharpness",
+                    "type": "int",
+                    "min": 0,
+                    "max": 7,
+                    "step": 1,
+                    "default": 0,
+                    "value": 0
+                },
+                {
+                    "name": "backlight_compensation",
+                    "type": "int",
+                    "min": 32,
+                    "max": 100,
+                    "step": 1,
+                    "default": 64,
+                    "value": 64
+                },
+                {
+                    "name": "white_balance_automatic",
+                    "type": "bool",
+                    "default": 1,
+                    "value": 1
+                }
+            ],
+            "Camera Controls": [
+                {
+                    "name": "exposure_time_absolute",
+                    "type": "int",
+                    "min": 1,
+                    "max": 10000,
+                    "step": 1,
+                    "default": 156,
+                    "value": 156,
+                    "flags": "inactive"
                 },
                 {
                     "name": "auto_exposure",
