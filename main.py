@@ -33,6 +33,11 @@ class MainWindow(QMainWindow):
         self.left_widget = QWidget()
         self.left_layout = QVBoxLayout(self.left_widget)
 
+        self.recording_label = QLabel()
+        self.recording_label.setText('Current State: <span style="color: blue">WAITING</span>')
+        self.recording_label.setAlignment(Qt.AlignVCenter)
+        self.left_layout.addWidget(self.recording_label, 0, Qt.AlignTop | Qt.AlignLeft)
+
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignCenter)
         self.video_label.setFixedSize(640, 480)
@@ -79,8 +84,8 @@ class MainWindow(QMainWindow):
         self.right_layout.addWidget(self.default_setting_button)
 
         self.button_layout = QHBoxLayout()
-        self.start_button = QPushButton('Recording Start')
-        self.stop_button = QPushButton('Recording Stop')
+        self.start_button = QPushButton('Detecting Start')
+        self.stop_button = QPushButton('Detecting Stop')
         self.button_layout.addWidget(self.start_button)
         self.button_layout.addWidget(self.stop_button)
         self.right_layout.addLayout(self.button_layout)
@@ -98,8 +103,8 @@ class MainWindow(QMainWindow):
         self.resolution_combo.currentTextChanged.connect(self.on_resolution_changed)
 
         self.default_setting_button.clicked.connect(self.apply_default_settings)
-        self.start_button.clicked.connect(self.thread.start_recording)
-        self.stop_button.clicked.connect(self.thread.stop_recording)
+        self.start_button.clicked.connect(self.on_start_recording)
+        self.stop_button.clicked.connect(self.on_stop_recording)
 
     def on_camera_model_changed(self, camera_model):
         self.resolution_combo.clear()
@@ -221,6 +226,14 @@ class MainWindow(QMainWindow):
             self.thread.initialize_camera(width, height)
             self.thread.change_resolution(width, height)
             self.video_label.setFixedSize(width, height)
+
+    def on_start_recording(self):
+        self.recording_label.setText('Current State: <span style="color: red">DETECTING</span>')
+        self.thread.start_recording()
+
+    def on_stop_recording(self):
+        self.recording_label.setText('Current State: <span style="color: blue">WAITING</span>')
+        self.thread.stop_recording()
 
     def save_camera_data(self):
         try:
