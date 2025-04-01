@@ -2,14 +2,14 @@ import numpy as np
 import cv2
 import torch
 import time
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from ultralytics import YOLO
 
 
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(np.ndarray)
 
-    def __init__(self):
+    def __init__(self, label):
         super().__init__()
         self.running = False
         self.can_recording = False
@@ -40,6 +40,14 @@ class VideoThread(QThread):
             "focus_automatic_continuous": 39,
             "auto_exposure": 21
         }
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.execute_periodic_tasks)
+        self.timer.start(5 * 60 * 1000)
+
+        self.brightness_threshold = 30
+
+        self.recording_label = label
 
     def initialize_camera(self, width=640, height=480):
         try:
@@ -76,6 +84,8 @@ class VideoThread(QThread):
                 print('Not read frame')
                 break
 
+            self.current_frame = frame
+
             results = self.model(source=frame, verbose=False)
 
             hornet_detected = False
@@ -99,10 +109,12 @@ class VideoThread(QThread):
 
     def start_recording(self):
         self.can_recording = True
+        self.recording_label.setText('Current State: <span style="color: red">DETECTING</span>')
 
     def stop_recording(self):
         self.can_recording = False
         self.recording = False
+        self.recording_label.setText('Current State: <span style="color: blue">WAITING</span>')
 
     def initialize_recording(self, first_frame):
         self.recording = True
@@ -164,3 +176,21 @@ class VideoThread(QThread):
         except Exception as e:
             print('Error updating camera setting: {e}')
             return False
+
+    def calculate_brightness(self, frame):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        return np.mean(gray)
+
+    def execute_periodic_tasks(self):
+        if self.current_frame is not None:
+            brightness = self.calculate_brightness(self.current_frame)
+            print(f'Frame brightness: {brightness}')
+
+            if brightness < self.brightness_threshold:
+                if self.can_recording:
+                    print('Stopping record as it gets darker')
+                    self.stop_recording()
+            else:
+                if not self.can_recording:
+                    print('Starting record as it gets brighter')
+                    self.start_recording()

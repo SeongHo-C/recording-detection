@@ -94,7 +94,7 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.right_widget)
 
     def setup_video_thread(self):
-        self.thread = VideoThread()
+        self.thread = VideoThread(self.recording_label)
         self.thread.change_pixmap_signal.connect(self.update_frame)
         self.thread.start()
 
@@ -233,11 +233,9 @@ class MainWindow(QMainWindow):
             self.video_label.setFixedSize(width, height)
 
     def on_start_recording(self):
-        self.recording_label.setText('Current State: <span style="color: red">DETECTING</span>')
         self.thread.start_recording()
 
     def on_stop_recording(self):
-        self.recording_label.setText('Current State: <span style="color: blue">WAITING</span>')
         self.thread.stop_recording()
 
     def save_camera_data(self):

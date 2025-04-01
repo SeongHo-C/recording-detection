@@ -161,7 +161,7 @@
                     "max": 64,
                     "step": 1,
                     "default": 0,
-                    "value": 24
+                    "value": 0
                 },
                 {
                     "name": "contrast",
@@ -170,7 +170,7 @@
                     "max": 95,
                     "step": 1,
                     "default": 0,
-                    "value": 62
+                    "value": 0
                 },
                 {
                     "name": "saturation",
@@ -179,7 +179,7 @@
                     "max": 255,
                     "step": 1,
                     "default": 56,
-                    "value": 127
+                    "value": 56
                 },
                 {
                     "name": "hue",
@@ -197,7 +197,7 @@
                     "max": 300,
                     "step": 1,
                     "default": 110,
-                    "value": 170
+                    "value": 110
                 },
                 {
                     "name": "gain",
