@@ -3,7 +3,7 @@ import sys
 import cv2
 import json
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QTabWidget, QPushButton, QFormLayout, QSlider, QCheckBox
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from video_thread import VideoThread
 
@@ -154,8 +154,15 @@ class MainWindow(QMainWindow):
             slider.setTickInterval(control['step'])
 
             value_label = QLabel(str(control['value']))
-            slider.valueChanged.connect(
-                lambda v, label=value_label: self.update_camera_setting(control_type, name, v, label))
+
+            debounce_timer = QTimer()
+            debounce_timer.setInterval(300)
+            debounce_timer.setSingleShot(True)
+
+            debounce_timer.timeout.connect(lambda: self.update_camera_setting(control_type, name, slider.value()))
+
+            slider.valueChanged.connect(lambda v: value_label.setText(str(v)))
+            slider.valueChanged.connect(lambda: debounce_timer.start())
 
             slider_layout = QHBoxLayout()
             slider_layout.addWidget(slider)
@@ -185,10 +192,8 @@ class MainWindow(QMainWindow):
 
             layout.addRow(name, combo)
 
-    def update_camera_setting(self, type, name, value, label=None):
-        if type == 'int':
-            label.setText(str(value))
-        elif type == 'bool':
+    def update_camera_setting(self, type, name, value):
+        if type == 'bool':
             value = 1 if value == 2 else 0
 
         result = self.thread.update_camera_setting(name, value)
