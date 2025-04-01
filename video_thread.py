@@ -103,8 +103,6 @@ class VideoThread(QThread):
     def stop_recording(self):
         self.can_recording = False
         self.recording = False
-        if hasattr(self, 'out'):
-            self.out.release()
 
     def initialize_recording(self, first_frame):
         self.recording = True
@@ -124,6 +122,10 @@ class VideoThread(QThread):
         self.out.write(frame)
         if time.time() - self.recording_start_time > 30:
             self.recording = False
+
+            if hasattr(self, 'out'):
+                self.out.release()
+
             print(f'Stopped recording: {self.output_file}')
             time.sleep(5)
 
