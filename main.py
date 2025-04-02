@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
         self.start_button.clicked.connect(self.on_start_recording)
         self.stop_button.clicked.connect(self.on_stop_recording)
 
+        self.thread.fps_signal.connect(self.update_fps_display)
+
     def on_camera_model_changed(self, camera_model):
         self.resolution_combo.clear()
         self.camera_model = camera_model
@@ -257,6 +259,12 @@ class MainWindow(QMainWindow):
         bytes_per_line = ch * w
         convert_to_Qt_format = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(convert_to_Qt_format)
+
+    def update_fps_display(self, fps):
+        current_text = self.recording_label.text()
+        base_text = current_text.split('(')[0].strip()
+        new_text = f'{base_text} ({int(fps)}FPS)'
+        self.recording_label.setText(new_text)
 
     def closeEvent(self, event):
         self.save_camera_data()

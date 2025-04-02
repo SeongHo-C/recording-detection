@@ -4,10 +4,12 @@ import torch
 import time
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from ultralytics import YOLO
+from collections import deque
 
 
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(np.ndarray)
+    fps_signal = pyqtSignal(float)
 
     def __init__(self, label):
         super().__init__()
@@ -49,6 +51,9 @@ class VideoThread(QThread):
 
         self.recording_label = label
 
+        self.frame_times = deque(maxlen=30)
+        self.current_fps = 0.0
+
     def initialize_camera(self, width=640, height=480):
         try:
             self.cap = cv2.VideoCapture(0)
@@ -74,6 +79,7 @@ class VideoThread(QThread):
         self.running = True
 
         while self.running:
+            start_time = time.time()
             if self.cap is None or not self.cap.isOpened():
                 print('Camera is not connected')
                 break
@@ -106,6 +112,11 @@ class VideoThread(QThread):
 
             if self.recording:
                 self.record_frame(frame)
+
+            self.frame_times.append(start_time)
+            if len(self.frame_times) > 1:
+                self.current_fps = len(self.frame_times) / (self.frame_times[-1] - self.frame_times[0])
+                self.fps_signal.emit(self.current_fps)
 
     def start_recording(self):
         self.can_recording = True
