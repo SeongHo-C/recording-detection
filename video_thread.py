@@ -2,9 +2,11 @@ import numpy as np
 import cv2
 import torch
 import time
+import queue
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from ultralytics import YOLO
 from collections import deque
+from threading import Thread
 
 
 class VideoThread(QThread):
@@ -54,18 +56,38 @@ class VideoThread(QThread):
         self.frame_times = deque(maxlen=30)
         self.current_fps = 0.0
 
+        # Seperate frame collecting and processing
+        self.frame_queue = queue.Queue(maxsize=2)  # maximum 2 frame buffering
+        self.grabber_thread = Thread(target=self.frame_grabber)
+        self.grabber_thread.daemon = True
+
+        print(cv2.__version__)
+        print(cv2.getBuildInformation())
+
     def initialize_camera(self, width=640, height=480):
         try:
-            self.cap = cv2.VideoCapture(0)
+            pipeline = (
+                f"v4l2src device=/dev/video0 ! "
+                f"image/jpeg,width={width},height={height},framerate=90/1 ! "
+                "jpegparse ! "             # MJPEG 파싱
+                "jpegdec ! "               # 하드웨어 가속 디코딩
+                "videoconvert ! "          # OpenCV 호환 포맷 변환
+                "video/x-raw,format=BGR ! "
+                "appsink drop=true sync=false"  # 버퍼 오버플로 방지
+            )
+
+            self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+        #   self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
             if not self.cap.isOpened():
                 print('Camera is not open')
                 return False
 
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-            self.cap.set(cv2.CAP_PROP_FPS, 90)
+            # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            # self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+            # self.cap.set(cv2.CAP_PROP_FPS, 90)
 
             print(
                 f'Actual Resolution: {int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))} x {int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}')
@@ -75,48 +97,52 @@ class VideoThread(QThread):
             print(f'An error occurred while loading the camera: {e}')
             return False
 
+    def frame_grabber(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            if not self.frame_queue.full():
+                self.frame_queue.put(frame)
+
     def run(self):
         self.running = True
+        self.grabber_thread.start()
 
         while self.running:
-            start_time = time.time()
-            if self.cap is None or not self.cap.isOpened():
-                print('Camera is not connected')
-                break
+            try:
+                start_time = time.time()
 
-            ret, frame = self.cap.read()
+                frame = self.frame_queue.get(timeout=1)
+                self.current_frame = frame
 
-            if not ret:
-                print('Not read frame')
-                break
+                results = self.model(source=frame, verbose=False)
 
-            self.current_frame = frame
-
-            results = self.model(source=frame, verbose=False)
-
-            hornet_detected = False
-            for result in results:
-                for cls in result.boxes.cls.cpu().numpy():
-                    if int(cls) in {0, 1}:
-                        hornet_detected = True
+                hornet_detected = False
+                for result in results:
+                    for cls in result.boxes.cls.cpu().numpy():
+                        if int(cls) in {0, 1}:
+                            hornet_detected = True
+                            break
+                    if hornet_detected:
                         break
-                if hornet_detected:
-                    break
 
-            if self.can_recording:
-                if hornet_detected and not self.recording:
-                    self.initialize_recording(frame)
+                if self.can_recording:
+                    if hornet_detected and not self.recording:
+                        self.initialize_recording(frame)
 
-            annotated_frame = results[0].plot()
-            self.change_pixmap_signal.emit(annotated_frame)
+                annotated_frame = results[0].plot()
+                self.change_pixmap_signal.emit(annotated_frame)
 
-            if self.recording:
-                self.record_frame(frame)
+                if self.recording:
+                    self.record_frame(frame)
 
-            self.frame_times.append(start_time)
-            if len(self.frame_times) > 1:
-                self.current_fps = len(self.frame_times) / (self.frame_times[-1] - self.frame_times[0])
-                self.fps_signal.emit(self.current_fps)
+                self.frame_times.append(start_time)
+                if len(self.frame_times) > 1:
+                    self.current_fps = len(self.frame_times) / (self.frame_times[-1] - self.frame_times[0])
+                    self.fps_signal.emit(self.current_fps)
+            except queue.Empty:
+                continue
 
     def start_recording(self):
         self.can_recording = True
