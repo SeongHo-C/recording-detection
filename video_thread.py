@@ -61,33 +61,20 @@ class VideoThread(QThread):
         self.grabber_thread = Thread(target=self.frame_grabber)
         self.grabber_thread.daemon = True
 
-        print(cv2.__version__)
-        print(cv2.getBuildInformation())
-
     def initialize_camera(self, width=640, height=480):
         try:
-            pipeline = (
-                f"v4l2src device=/dev/video0 ! "
-                f"image/jpeg,width={width},height={height},framerate=90/1 ! "
-                "jpegparse ! "             # MJPEG 파싱
-                "jpegdec ! "               # 하드웨어 가속 디코딩
-                "videoconvert ! "          # OpenCV 호환 포맷 변환
-                "video/x-raw,format=BGR ! "
-                "appsink drop=true sync=false"  # 버퍼 오버플로 방지
-            )
-
-            self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-        #   self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+            # pipeline = "v4l2src device=/dev/video0 ! videoconvert ! appsink"
+            # self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+            self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
             if not self.cap.isOpened():
                 print('Camera is not open')
                 return False
 
-            # self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            # self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-            # self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-            # self.cap.set(cv2.CAP_PROP_FPS, 90)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+            self.cap.set(cv2.CAP_PROP_FPS, 90)
 
             print(
                 f'Actual Resolution: {int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))} x {int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}')
