@@ -149,14 +149,14 @@ class VideoThread(QThread):
         self.out = cv2.VideoWriter(
             self.output_file,
             fourcc,
-            90.0,
+            60.0,
             (first_frame.shape[1], first_frame.shape[0])
         )
         print(f'Started recording: {self.output_file}')
 
     def record_frame(self, frame):
         self.out.write(frame)
-        if time.time() - self.recording_start_time > 30:
+        if time.time() - self.recording_start_time > 60 * 5:
             self.recording = False
 
             if hasattr(self, 'out'):
